@@ -49,7 +49,7 @@ The env var `bf49251b...` is STALE and from an old version. The correct token is
 - `ultraralph-2` — other project
 
 ## Git Repos
-- Happy fork: `/home/lisergico25/happy-openclaw-app/` → `biodoia/happy-openclaw-app`
+- Happy fork: `/mnt/godata/projects/happy-openclaw-app/` → `biodoia/happy-openclaw-app`
 - Casino bot: has its own repo (completed and pushed)
 - AgentAPI fork: `biodoia/happy-openclaw` (Go-based, with OpenClaw TUI support, completed)
 

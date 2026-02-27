@@ -3,7 +3,7 @@
 ## Overview
 Fork of Happy CLI (`happy-openclaw-app`) that adds an OpenClaw Gateway backend.
 Repo: `git@github.com:biodoia/happy-openclaw-app.git`
-Local: `/home/lisergico25/happy-openclaw-app/packages/happy-cli/`
+Local: `/mnt/godata/projects/happy-openclaw-app/packages/happy-cli/`
 
 ## What It Does
 Connects to a running OpenClaw Gateway via WebSocket, bridging Happy's AgentMessage protocol to OpenClaw's Gateway protocol. Enables remote control of OpenClaw sessions from mobile/web.
@@ -38,7 +38,7 @@ Happy Mobile App <-> Happy Server <-> OpenClawBackend <-(WebSocket)-> OpenClaw G
 
 ## Build & Run
 ```bash
-cd /home/lisergico25/happy-openclaw-app/packages/happy-cli
+cd /mnt/godata/projects/happy-openclaw-app/packages/happy-cli
 yarn build
 node --no-warnings --no-deprecation dist/index.mjs openclaw
 # Optional: --gateway-url ws://host:port/ws --token TOKEN --session SESSION_KEY
