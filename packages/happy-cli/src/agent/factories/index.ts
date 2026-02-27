@@ -15,6 +15,13 @@ export {
   type GeminiBackendResult,
 } from './gemini';
 
+// OpenClaw factory (WebSocket-based, not ACP)
+export {
+  createOpenClawBackend,
+  registerOpenClawAgent,
+  type RunOpenClawOptions as OpenClawBackendOptions,
+} from '../../openclaw';
+
 // Future factories:
 // export { createCodexBackend, registerCodexAgent, type CodexBackendOptions } from './codex';
 // export { createClaudeBackend, registerClaudeAgent, type ClaudeBackendOptions } from './claude';

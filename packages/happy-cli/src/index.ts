@@ -342,6 +342,115 @@ import { extractNoSandboxFlag } from './utils/sandboxFlags'
       process.exit(1)
     }
     return;
+  } else if (subcommand === 'openclaw' || subcommand === 'claw') {
+    // Handle OpenClaw command — connects to a running OpenClaw Gateway via WebSocket
+    try {
+      const { registerOpenClawAgent, createOpenClawBackend } = await import('@/openclaw');
+
+      // Parse OpenClaw-specific arguments
+      let startedBy: 'daemon' | 'terminal' | undefined = undefined;
+      let gatewayUrl: string | undefined = undefined;
+      let token: string | undefined = undefined;
+      let sessionKey: string | undefined = undefined;
+
+      for (let i = 1; i < args.length; i++) {
+        if (args[i] === '--started-by') {
+          startedBy = args[++i] as 'daemon' | 'terminal';
+        } else if (args[i] === '--gateway-url') {
+          gatewayUrl = args[++i];
+        } else if (args[i] === '--token') {
+          token = args[++i];
+        } else if (args[i] === '--session') {
+          sessionKey = args[++i];
+        }
+      }
+
+      const { credentials } = await authAndSetupMachineIfNeeded();
+
+      // Auto-start daemon
+      logger.debug('Ensuring Happy background service is running & matches our version...');
+      if (!(await isDaemonRunningCurrentlyInstalledHappyVersion())) {
+        logger.debug('Starting Happy background service...');
+        const daemonProcess = spawnHappyCLI(['daemon', 'start-sync'], {
+          detached: true,
+          stdio: 'ignore',
+          env: process.env
+        });
+        daemonProcess.unref();
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      // Register and run OpenClaw agent
+      registerOpenClawAgent();
+
+      const backend = createOpenClawBackend({
+        gatewayUrl,
+        token,
+        sessionKey,
+        cwd: process.cwd(),
+      });
+
+      // The backend manages its own session — no Claude loop needed here.
+
+      console.log(chalk.cyan('🦞 Connecting to OpenClaw Gateway...'));
+      console.log(chalk.gray(`   URL: ${gatewayUrl || 'ws://127.0.0.1:18789/ws'}`));
+      console.log(chalk.gray(`   Session: ${sessionKey || 'main'}`));
+
+      // Start the backend session
+      const session = await backend.startSession();
+      console.log(chalk.green('✓ Connected to OpenClaw Gateway'));
+
+      // Forward messages to console (basic TUI mode)
+      backend.onMessage((msg) => {
+        if (msg.type === 'model-output' && msg.textDelta) {
+          process.stdout.write(msg.textDelta);
+        } else if (msg.type === 'status') {
+          if (msg.status === 'error') {
+            console.error(chalk.red(`\n[OpenClaw] Error: ${msg.detail}`));
+          } else if (msg.status === 'idle') {
+            process.stdout.write('\n');
+          }
+        } else if (msg.type === 'tool-call') {
+          console.log(chalk.yellow(`\n[Tool] ${msg.toolName}`));
+        }
+      });
+
+      // Interactive prompt loop
+      const readline = await import('node:readline');
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        prompt: chalk.cyan('🦞 > '),
+      });
+
+      rl.prompt();
+
+      rl.on('line', async (line: string) => {
+        const input = line.trim();
+        if (input === 'exit' || input === 'quit') {
+          await backend.dispose();
+          process.exit(0);
+        }
+        if (input) {
+          await backend.sendPrompt(session.sessionId, input);
+          await backend.waitForResponseComplete?.();
+        }
+        rl.prompt();
+      });
+
+      rl.on('close', async () => {
+        await backend.dispose();
+        process.exit(0);
+      });
+
+    } catch (error) {
+      console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
+      if (process.env.DEBUG) {
+        console.error(error)
+      }
+      process.exit(1)
+    }
+    return;
   } else if (subcommand === 'acp') {
     try {
       const { runAcp, resolveAcpAgentConfig } = await import('@/agent/acp');
@@ -634,6 +743,7 @@ ${chalk.bold('Usage:')}
   happy auth              Manage authentication
   happy codex             Start Codex mode
   happy gemini            Start Gemini mode (ACP)
+  happy openclaw          Start OpenClaw mode (Gateway WebSocket)
   happy acp               Start a generic ACP-compatible agent
   happy connect           Connect AI vendor API keys
   happy sandbox           Configure and manage OS-level sandboxing
