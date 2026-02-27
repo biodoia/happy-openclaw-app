@@ -394,68 +394,76 @@ export class OpenClawBackend implements AgentBackend {
     const p = event.payload || {};
 
     switch (event.event) {
-      // Agent streaming events (nested in agent event with data payload)
+      // Agent streaming events — gateway sends { stream, data } in payload
+      // stream types: "lifecycle" (phase: start/error/done), "text" (delta text),
+      //               "tool" (tool calls), "error" (seq gaps, etc.)
       case 'agent': {
-        const data = (p.data as Record<string, unknown>) || p;
+        const data = (p.data as Record<string, unknown>) || {};
         const stream = (p.stream as string) || '';
-        if (stream === 'text' || data.text) {
-          const text = (data.text as string) || '';
+
+        if (stream === 'lifecycle') {
+          const phase = (data.phase as string) || '';
+          if (phase === 'start') {
+            this.responseBuffer = '';
+            this.isResponding = true;
+            this.emit({ type: 'status', status: 'running' });
+          } else if (phase === 'error') {
+            const detail = (data.error as string) || 'Unknown agent error';
+            this.isResponding = false;
+            this.emit({ type: 'status', status: 'error', detail });
+          } else if (phase === 'done' || phase === 'end') {
+            this.isResponding = false;
+            this.emit({ type: 'status', status: 'idle' });
+            this.responseBuffer = '';
+          }
+        } else if (stream === 'text' || stream === 'assistant') {
+          const text = (data.delta as string) || (data.text as string) || '';
           if (text) {
             this.responseBuffer += text;
             this.isResponding = true;
             this.emit({ type: 'model-output', textDelta: text, fullText: this.responseBuffer });
           }
+        } else if (stream === 'tool') {
+          const phase = (data.phase as string) || (data.type as string) || '';
+          if (phase === 'start' || phase === 'call') {
+            const toolName = (data.name as string) || 'unknown';
+            const callId = (data.id as string) || randomUUID();
+            this.emit({
+              type: 'tool-call',
+              toolName,
+              args: (data.input as Record<string, unknown>) || {},
+              callId,
+            });
+          } else if (phase === 'end' || phase === 'result') {
+            const toolName = (data.name as string) || 'unknown';
+            const callId = (data.id as string) || '';
+            this.emit({
+              type: 'tool-result',
+              toolName,
+              result: data.output,
+              callId,
+            });
+          }
         }
-        if (data.type === 'done' || data.type === 'turn.end') {
-          this.isResponding = false;
-          this.emit({ type: 'status', status: 'idle' });
-          this.responseBuffer = '';
-        }
-        if (data.type === 'turn.start') {
-          this.responseBuffer = '';
-          this.isResponding = true;
-          this.emit({ type: 'status', status: 'running' });
-        }
-        if (data.type === 'tool.start') {
-          const toolName = (data.name as string) || 'unknown';
-          const callId = (data.id as string) || randomUUID();
-          this.emit({
-            type: 'tool-call',
-            toolName,
-            args: (data.input as Record<string, unknown>) || {},
-            callId,
-          });
-        }
-        if (data.type === 'tool.end') {
-          const toolName = (data.name as string) || 'unknown';
-          const callId = (data.id as string) || '';
-          this.emit({
-            type: 'tool-result',
-            toolName,
-            result: data.output,
-            callId,
-          });
-        }
-        if (data.type === 'error') {
-          const detail = (data.message as string) || 'Unknown error';
-          this.emit({ type: 'status', status: 'error', detail });
-        }
+        // stream === 'error' → protocol-level errors (seq gaps etc.), ignore
         break;
       }
 
-      // Chat event (may contain text deltas)
+      // Chat state events — gateway sends { state, errorMessage?, message? }
+      // state values: "delta" (streaming), "final" (complete), "error"
       case 'chat': {
-        const text = (p.text as string) || (p.delta as string) || '';
-        if (text) {
-          this.responseBuffer += text;
-          this.isResponding = true;
-          this.emit({ type: 'model-output', textDelta: text, fullText: this.responseBuffer });
-        }
-        if (p.type === 'done' || p.type === 'turn.end') {
+        const state = (p.state as string) || '';
+        if (state === 'error') {
+          const detail = (p.errorMessage as string) || 'Chat error';
+          this.isResponding = false;
+          this.emit({ type: 'status', status: 'error', detail });
+        } else if (state === 'final' || state === 'done' || state === 'end') {
           this.isResponding = false;
           this.emit({ type: 'status', status: 'idle' });
           this.responseBuffer = '';
         }
+        // Note: text content is delivered via agent "assistant" stream events,
+        // not via chat events. Chat events carry state transitions.
         break;
       }
 
