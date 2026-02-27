@@ -345,18 +345,15 @@ import { extractNoSandboxFlag } from './utils/sandboxFlags'
   } else if (subcommand === 'openclaw' || subcommand === 'claw') {
     // Handle OpenClaw command — connects to a running OpenClaw Gateway via WebSocket
     try {
-      const { registerOpenClawAgent, createOpenClawBackend } = await import('@/openclaw');
+      const { createOpenClawBackend } = await import('@/openclaw');
 
       // Parse OpenClaw-specific arguments
-      let startedBy: 'daemon' | 'terminal' | undefined = undefined;
       let gatewayUrl: string | undefined = undefined;
       let token: string | undefined = undefined;
       let sessionKey: string | undefined = undefined;
 
       for (let i = 1; i < args.length; i++) {
-        if (args[i] === '--started-by') {
-          startedBy = args[++i] as 'daemon' | 'terminal';
-        } else if (args[i] === '--gateway-url') {
+        if (args[i] === '--gateway-url') {
           gatewayUrl = args[++i];
         } else if (args[i] === '--token') {
           token = args[++i];
@@ -364,24 +361,6 @@ import { extractNoSandboxFlag } from './utils/sandboxFlags'
           sessionKey = args[++i];
         }
       }
-
-      const { credentials } = await authAndSetupMachineIfNeeded();
-
-      // Auto-start daemon
-      logger.debug('Ensuring Happy background service is running & matches our version...');
-      if (!(await isDaemonRunningCurrentlyInstalledHappyVersion())) {
-        logger.debug('Starting Happy background service...');
-        const daemonProcess = spawnHappyCLI(['daemon', 'start-sync'], {
-          detached: true,
-          stdio: 'ignore',
-          env: process.env
-        });
-        daemonProcess.unref();
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      // Register and run OpenClaw agent
-      registerOpenClawAgent();
 
       const backend = createOpenClawBackend({
         gatewayUrl,
