@@ -1,3 +1,5 @@
+> **ECOSYSTEM NOTE (2026-08-01):** Tailscale è rimosso. Usare **aigoproxy** (`*.braigo.dev`, bind `127.0.0.1`). Questa pagina storica può contenere riferimenti obsoleti — preferire README/SPEC allineati.
+
 # Infrastructure & Local Services
 
 ## OpenClaw Gateway

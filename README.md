@@ -1,106 +1,68 @@
-<div align="center"><img src="/.github/logotype-dark.png" width="400" title="Happy Coder" alt="Happy Coder"/></div>
+# happy-openclaw-app
 
-<h1 align="center">
-  Mobile and Web Client for Claude Code & Codex
-</h1>
+[![fgt-sdk](https://img.shields.io/badge/fgt--sdk-v3.0-blueviolet)](https://github.com/biodoia)
+[![No Tailscale](https://img.shields.io/badge/network-aigoproxy-success)](https://github.com/biodoia/aigoproxy)
+[![Aligned](https://img.shields.io/badge/docs-aligned%202026-08-02-brightgreen)]()
 
-<h4 align="center">
-Use Claude Code or Codex from anywhere with end-to-end encryption.
-</h4>
+> Repository: `happy-openclaw-app` · Go `1.22+`.
 
-<div align="center">
-  
-[📱 **iOS App**](https://apps.apple.com/us/app/happy-claude-code-client/id6748571505) • [🤖 **Android App**](https://play.google.com/store/apps/details?id=com.ex3ndr.happy) • [🌐 **Web App**](https://app.happy.engineering) • [🎥 **See a Demo**](https://youtu.be/GCS0OG9QMSE) • [📚 **Documentation**](https://happy.engineering/docs/) • [💬 **Discord**](https://discord.gg/fX9WBAhyfD)
+**Standard ecosistema (2026-08-01):** aigoproxy · memogo · goleciave · PebbleDB · gogatewai · mem0 · zero CGO.
 
-</div>
+## Cosa fa
 
-<img width="5178" height="2364" alt="github" src="/.github/header.png" />
+Repository: `happy-openclaw-app` · Go `1.22+`.
 
+Repository: `happy-openclaw-app` · Go `1.22+`.
 
-<h3 align="center">
-Step 1: Download App
-</h3>
-
-<div align="center">
-<a href="https://apps.apple.com/us/app/happy-claude-code-client/id6748571505"><img width="135" height="39" alt="appstore" src="https://github.com/user-attachments/assets/45e31a11-cf6b-40a2-a083-6dc8d1f01291" /></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://play.google.com/store/apps/details?id=com.ex3ndr.happy"><img width="135" height="39" alt="googleplay" src="https://github.com/user-attachments/assets/acbba639-858f-4c74-85c7-92a4096efbf5" /></a>
-</div>
-
-<h3 align="center">
-Step 2: Install CLI on your computer
-</h3>
-
-```bash
-npm install -g happy-coder
-```
-
-<h3 align="center">
-Run From Source (Repo Checkout)
-</h3>
-
-```bash
-# from repository root
-yarn cli --help
-yarn cli codex
-```
-
-<h3 align="center">
-Release (Maintainers)
-</h3>
-
-```bash
-# from repository root
-yarn release
-```
-
-<h3 align="center">
-Step 3: Start using `happy` instead of `claude` or `codex`
-</h3>
-
-```bash
-
-# Instead of: claude
-# Use: happy
-
-happy
-
-# Instead of: codex
-# Use: happy codex
-
-happy codex
+## Architettura (fgt-sdk v3.0)
 
 ```
+┌─────────────────────────────────────────────┐
+│  1 Body — daemon systemd (background)       │
+│  N Heads — TUI / Web HTMX / Chat / MCP      │
+│  Bind: 127.0.0.1:<porta>  (MAI 0.0.0.0)     │
+│  Pubblico: <app>.braigo.dev → aigoproxy     │
+└─────────────────────────────────────────────┘
+```
 
-<div align="center"><img src="/.github/mascot.png" width="200" title="Happy Coder" alt="Happy Coder"/></div>
+### Pacchetti principali
 
-## How does it work?
+  - _(vedi albero sorgente)_
 
-On your computer, run `happy` instead of `claude` or `happy codex` instead of `codex` to start your AI through our wrapper. When you want to control your coding agent from your phone, it restarts the session in remote mode. To switch back to your computer, just press any key on your keyboard.
+## Stack & compliance
 
-## 🔥 Why Happy Coder?
+- **Rete**: listener `127.0.0.1:<porta>` · host pubblici `*.braigo.dev` via **aigoproxy**
+- **Memoria agenti**: mem0 MCP `http://127.0.0.1:12000` (`user_id=biodoia`)
+- **Tailscale**: **rimosso** dall'ecosistema (2026-08-01) — vietato in docs e codice nuovo
 
-- 📱 **Mobile access to Claude Code and Codex** - Check what your AI is building while away from your desk
-- 🔔 **Push notifications** - Get alerted when Claude Code and Codex needs permission or encounters errors  
-- ⚡ **Switch devices instantly** - Take control from phone or desktop with one keypress
-- 🔐 **End-to-end encrypted** - Your code never leaves your devices unencrypted
-- 🛠️ **Open source** - Audit the code yourself. No telemetry, no tracking
+## Avvio locale
 
-## 📦 Project Components
+```bash
+# build (se Go)
+go build -o happy-openclaw-app ./cmd/happy-openclaw-app 2>/dev/null || go build -o happy-openclaw-app .
 
-- **[Happy App](https://github.com/slopus/happy/tree/main/packages/happy-app)** - Web UI + mobile client (Expo)
-- **[Happy CLI](https://github.com/slopus/happy/tree/main/packages/happy-cli)** - Command-line interface for Claude Code and Codex
-- **[Happy Agent](https://github.com/slopus/happy/tree/main/packages/happy-agent)** - Remote agent control CLI (create, send, monitor sessions)
-- **[Happy Server](https://github.com/slopus/happy/tree/main/packages/happy-server)** - Backend server for encrypted sync
+# run su loopback
+./happy-openclaw-app   # o: serve / daemon — verifica --help
 
-## 🏠 Who We Are
+# registra rotta pubblica (obbligatorio per UI web)
+curl -X POST http://127.0.0.1:80/api/routes \
+  -H 'Content-Type: application/json' \
+  -d '{"host":"happy-openclaw-app.braigo.dev","upstream":"http://127.0.0.1:<PORTA>","auth":"none"}'
+```
 
-We're engineers scattered across Bay Area coffee shops and hacker houses, constantly checking how our AI coding agents are progressing on our pet projects during lunch breaks. Happy Coder was born from the frustration of not being able to peek at our AI coding tools building our side hustles while we're away from our keyboards. We believe the best tools come from scratching your own itch and sharing with the community.
+## Documentazione correlata
 
-## 📚 Documentation & Contributing
+| File | Ruolo |
+|------|--------|
+| [`SPEC.md`](SPEC.md) | Specifica allineata |
+| [`AGENTS.md`](AGENTS.md) | Regole operative agenti |
+| [`QWEN.md`](QWEN.md) | Vincoli progetto per coding agent |
+| [`DOCS_AUDIT_PROPOSAL.md`](DOCS_AUDIT_PROPOSAL.md) | Audit / proposta allineamento |
 
-- **[Documentation Website](https://happy.engineering/docs/)** - Learn how to use Happy Coder effectively
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development setup including iOS, Android, and macOS desktop variant builds
-- **[Edit docs at github.com/slopus/slopus.github.io](https://github.com/slopus/slopus.github.io)** - Help improve our documentation and guides
+## Verifica
 
-## License
+Documentazione riscritta dopo verifica del codice sorgente e inventario
+**nocodaigo** (explode `--no-llm` strutturale) + **godocai scan**.
 
-MIT License - see [LICENSE](LICENSE) for details.
+---
+*docs(align): fgt-sdk v3.0 · 2026-08-02*
